@@ -1,0 +1,35 @@
+name: TionOS Build CI
+
+on:
+  workflow_dispatch: # Запуск вручну кнопкою на GitHub
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Tree
+      uses: actions/checkout@v3
+
+    - name: Cleanup Space
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+
+    - name: Install Build Tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3
+
+    - name: Sync dependencies
+      run: |
+        # Тут можна додати команду для скачування маніфесту прошивки
+        echo "Syncing TionOS Source..."
+
+    - name: Build TionOS
+      run: |
+        # Це приклад команди збірки (залежить від обраної бази AOSP)
+        echo "Starting build for merlinx..."
+        # source build/envsetup.sh
+        # lunch tion_merlinx-userdebug
+        # mka recoveryimage
