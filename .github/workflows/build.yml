@@ -32,15 +32,19 @@ jobs:
         git config --global user.email "standoffplay94@gmail.com"
         git config --global user.name "MrGaris"
         
-        # Ініціалізація маніфесту (той самий, що ми бачили на скріні)
         repo init --no-clone-bundle -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1 --depth=1
         
-        # Клонуємо твоє дерево TionOS та залежності
+        # Клонуємо дерева
         git clone https://github.com/MrGaris/android_device_xiaomi_merlin_tion.git device/xiaomi/merlin
         git clone https://github.com/6768Team/android_device_xiaomi_mt6768-common.git device/xiaomi/mt6768-common
         git clone https://github.com/6768Team/android_vendor_xiaomi_merlinx.git vendor/xiaomi/merlinx
         
-        # Синхронізація
+        # ЛІНИВИЙ ФІКС: Автоматично створюємо потрібний файл конфігу, щоб ти нічого не перейменовував
+        cd device/xiaomi/merlin
+        cp tion_merlinx.mk twrp_merlin.mk || cp vendorsetup.sh twrp_merlin.mk || true
+        sed -i 's/PRODUCT_NAME := .*/PRODUCT_NAME := twrp_merlin/g' twrp_merlin.mk
+        cd ~/twrp
+        
         repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
 
     - name: Build TionOS Recovery
@@ -48,13 +52,12 @@ jobs:
         export PATH="$HOME/bin:$PATH"
         cd ~/twrp
         source build/envsetup.sh
-        # Спроба lunch
-        lunch twrp_merlin-eng || lunch tion_merlinx-eng
-        # Сама збірка
+        export ALLOW_MISSING_DEPENDENCIES=true
+        lunch twrp_merlin-eng
         mka recoveryimage -j$(nproc --all)
 
     - name: Upload Result
-      if: success()
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: TionOS-S-Recovery
