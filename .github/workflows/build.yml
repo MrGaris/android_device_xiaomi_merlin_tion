@@ -1,4 +1,4 @@
-name: TionOS Recovery Build
+name: TionOS Recovery Build (Android 12 S)
 
 on:
   workflow_dispatch:
@@ -20,33 +20,36 @@ jobs:
     - name: Install Build Tools
       run: |
         sudo apt-get update
-        sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3 gcc clang libssl-dev repo rsync
+        sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3 gcc clang libssl-dev rsync
+        mkdir -p ~/bin
+        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        chmod a+x ~/bin/repo
 
     - name: Setup Repo & Sync Source
       run: |
-        mkdir ~/fox && cd ~/fox
+        export PATH="$HOME/bin:$PATH"
+        mkdir ~/twrp && cd ~/twrp
         git config --global user.email "standoffplay94@gmail.com"
         git config --global user.name "MrGaris"
         
-        # Ініціалізація OrangeFox
-        repo init -u https://gitlab.com/OrangeFox/Manifest.git -b fox_12.1 --depth=1
+        # Використовуємо маніфест з твого скріншоту
+        repo init --no-clone-bundle -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1 --depth=1
         
-        # Клонуємо твоє дерево TionOS
+        # Твої дерева пристрою
         git clone https://github.com/MrGaris/android_device_xiaomi_merlin_tion.git device/xiaomi/merlin
-        
-        # Додаємо залежності від 6768Team
         git clone https://github.com/6768Team/android_device_xiaomi_mt6768-common.git device/xiaomi/mt6768-common
         git clone https://github.com/6768Team/android_vendor_xiaomi_merlinx.git vendor/xiaomi/merlinx
         
-        # Синхронізація
+        # Синхронізація (тут качається основний об'єм)
         repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
 
     - name: Build TionOS Recovery
       run: |
-        cd ~/fox
+        export PATH="$HOME/bin:$PATH"
+        cd ~/twrp
         set +e
         source build/envsetup.sh
-        # Пробуємо lunch для твого пристрою
+        # Пробуємо lunch для merlin
         lunch twrp_merlin-eng || lunch tion_merlinx-eng
         mka recoveryimage -j$(nproc --all)
         set -e
@@ -54,5 +57,5 @@ jobs:
     - name: Upload Result
       uses: actions/upload-artifact@v4
       with:
-        name: TionOS-Recovery-Merlin
-        path: ~/fox/out/target/product/merlin/*.img
+        name: TionOS-S-Recovery
+        path: ~/twrp/out/target/product/merlin/*.img
