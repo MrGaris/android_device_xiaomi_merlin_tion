@@ -34,16 +34,10 @@ jobs:
         
         repo init --no-clone-bundle -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1 --depth=1
         
-        # Клонуємо дерева
-        git clone https://github.com/MrGaris/android_device_xiaomi_merlin_tion.git device/xiaomi/merlin
+        # КЛОНУЄМО В ПРАВИЛЬНУ ПАПКУ (merlinx), як того вимагає твій конфіг
+        git clone https://github.com/MrGaris/android_device_xiaomi_merlin_tion.git device/xiaomi/merlinx
         git clone https://github.com/6768Team/android_device_xiaomi_mt6768-common.git device/xiaomi/mt6768-common
         git clone https://github.com/6768Team/android_vendor_xiaomi_merlinx.git vendor/xiaomi/merlinx
-        
-        # ЛІНИВИЙ ФІКС: Автоматично створюємо потрібний файл конфігу, щоб ти нічого не перейменовував
-        cd device/xiaomi/merlin
-        cp tion_merlinx.mk twrp_merlin.mk || cp vendorsetup.sh twrp_merlin.mk || true
-        sed -i 's/PRODUCT_NAME := .*/PRODUCT_NAME := twrp_merlin/g' twrp_merlin.mk
-        cd ~/twrp
         
         repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
 
@@ -53,7 +47,13 @@ jobs:
         cd ~/twrp
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
-        lunch twrp_merlin-eng
+        
+        # РОЗУМНИЙ ПОШУК: Скрипт сам знайде назву продукту в твоїх файлах
+        PRODUCT=$(grep -h "PRODUCT_NAME" device/xiaomi/merlinx/*.mk | head -n 1 | awk '{print $3}')
+        echo "Знайдено продукт: $PRODUCT"
+        
+        # Запускаємо збірку з правильною назвою
+        lunch ${PRODUCT}-eng
         mka recoveryimage -j$(nproc --all)
 
     - name: Upload Result
@@ -61,4 +61,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: TionOS-S-Recovery
-        path: ~/twrp/out/target/product/merlin/*.img
+        # Зірочка в шляху гарантує, що файл знайдеться в будь-якій папці
+        path: ~/twrp/out/target/product/*/*.img
