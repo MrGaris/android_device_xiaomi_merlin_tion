@@ -1,35 +1,54 @@
-name: TionOS Build CI
+name: TionOS Recovery Build
 
 on:
   workflow_dispatch: # Запуск вручну кнопкою на GitHub
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # Стабільна версія для збірки Android
     steps:
     - name: Checkout Tree
       uses: actions/checkout@v3
 
     - name: Cleanup Space
       run: |
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf /usr/share/dotnet /etc/mysql /usr/local/lib/android
+        sudo apt-get clean
 
     - name: Install Build Tools
       run: |
         sudo apt-get update
-        sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3
+        sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3 python2 gcc clang libssl-dev repo rsync
 
-    - name: Sync dependencies
+    - name: Setup Repo & Sync Source
       run: |
-        # Тут можна додати команду для скачування маніфесту прошивки
-        echo "Syncing TionOS Source..."
+        mkdir ~/fox && cd ~/fox
+        git config --global user.email "standoffplay94@gmail.com"
+        git config --global user.name "MrGaris"
+        
+        # Ініціалізація OrangeFox (база для рекавері)
+        repo init -u https://gitlab.com/OrangeFox/Manifest.git -b fox_12.1 --depth=1
+        
+        # Клонуємо твоє дерево TionOS
+        git clone https://github.com/MrGaris/android_device_xiaomi_merlin_tion.git device/xiaomi/merlin
+        
+        # Додаємо залежності від 6768Team (common та vendor)
+        git clone https://github.com/6768Team/android_device_xiaomi_mt6768-common.git device/xiaomi/mt6768-common
+        git clone https://github.com/6768Team/android_vendor_xiaomi_merlinx.git vendor/xiaomi/merlinx
+        
+        # Швидка синхронізація
+        repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
 
-    - name: Build TionOS
+    - name: Build TionOS Recovery
       run: |
-        # Це приклад команди збірки (залежить від обраної бази AOSP)
-        echo "Starting build for merlinx..."
-        # source build/envsetup.sh
-        # lunch tion_merlinx-userdebug
-        # mka recoveryimage
+        cd ~/fox
+        source build/envsetup.sh
+        # Використовуємо твій продукт, який ми перейменували
+        lunch twrp_merlin-eng || lunch tion_merlinx-eng
+        mka recoveryimage -j$(nproc --all)
+
+    - name: Upload Result
+      uses: actions/upload-artifact@v3
+      with:
+        name: TionOS-Recovery-Merlin
+        path: ~/fox/out/target/product/merlin/*.img
