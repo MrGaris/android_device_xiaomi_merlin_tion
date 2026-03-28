@@ -14,9 +14,9 @@
 # limitations under the License.
 #
 
-DEVICE_PATH := device/xiaomi/merlinx
+DEVICE_PATH := device/xiaomi/merlin
 
-TARGET_BOOTLOADER_BOARD_NAME := merlinx
+TARGET_BOOTLOADER_BOARD_NAME := merlin
 
 # Inherit from mt6768-common
 -include device/xiaomi/mt6768-common/BoardConfigCommon.mk
@@ -35,3 +35,17 @@ ODM_MANIFEST_SKUS += \
     merlinnfc
 
 ODM_MANIFEST_MERLINNFC_FILES := $(DEVICE_PATH)/manifest_merlinnfc.xml
+
+# TWRP UI Configuration (ВИПРАВЛЕННЯ ПОМИЛКИ UI)
+TW_THEME := portrait_hdpi
+DEVICE_SCREEN_WIDTH := 1080
+DEVICE_SCREEN_HEIGHT := 2340
+TW_BRIGHTNESS_PATH := "/sys/class/leds/lcd-backlight/brightness"
+TW_MAX_BRIGHTNESS := 2047
+TW_DEFAULT_BRIGHTNESS := 1200
+
+# Додаткові налаштування для TionOS
+TW_EXCLUDE_DEFAULT_USB_INIT := true
+TW_EXTRA_LANGUAGES := true
+TW_INCLUDE_NTFS_3G := true
+TW_USE_TOOLBOX := true
